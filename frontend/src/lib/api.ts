@@ -1,10 +1,11 @@
 /**
- * API client for CloakBrowser Manager backend.
+ * API client for Haune Browser backend.
  */
 
 export interface Profile {
   id: string;
   name: string;
+  group: string | null;
   fingerprint_seed: number;
   proxy: string | null;
   timezone: string | null;
@@ -36,6 +37,7 @@ export interface Profile {
 
 export interface ProfileCreateData {
   name: string;
+  group?: string | null;
   fingerprint_seed?: number | null;
   proxy?: string | null;
   timezone?: string | null;

@@ -83,6 +83,15 @@ def test_auth_correct_bearer_200(client_auth: TestClient):
     assert resp.status_code == 200
 
 
+def test_auth_automation_create_requires_bearer(client_auth: TestClient):
+    resp = client_auth.post(
+        "/api/automation/profiles",
+        json={"name": "Secured"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 201
+
+
 def test_auth_correct_cookie_200(client_auth: TestClient):
     client_auth.cookies.set("auth_token", "test-secret")
     resp = client_auth.get("/api/profiles")

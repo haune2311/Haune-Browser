@@ -181,6 +181,11 @@ function AppContent({ authRequired, onLogout }: AppContentProps) {
               <div className="flex items-center gap-2">
                 <StatusIndicator status={selected.status} size="md" />
                 <span className="text-sm font-medium">{selected.name}</span>
+                {selected.group && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-3 text-accent">
+                    {selected.group}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500 capitalize">{selected.platform}</span>
               </div>
             )}

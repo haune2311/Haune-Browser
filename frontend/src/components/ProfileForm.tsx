@@ -57,6 +57,7 @@ export function ProfileForm({ profile, onSave, onDelete, onCancel }: ProfileForm
 
   const [form, setForm] = useState<ProfileCreateData>({
     name: "",
+    group: null,
     platform: "windows",
     screen_width: 1920,
     screen_height: 1080,
@@ -80,6 +81,7 @@ export function ProfileForm({ profile, onSave, onDelete, onCancel }: ProfileForm
     if (profile) {
       setForm({
         name: profile.name,
+        group: profile.group,
         fingerprint_seed: profile.fingerprint_seed,
         proxy: profile.proxy,
         timezone: profile.timezone,
@@ -214,6 +216,15 @@ export function ProfileForm({ profile, onSave, onDelete, onCancel }: ProfileForm
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="e.g. Amazon Seller #1"
                 required
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="label">Group</label>
+              <input
+                className="input"
+                value={form.group ?? ""}
+                onChange={(e) => set("group", e.target.value.trim() ? e.target.value : null)}
+                placeholder="e.g. Team A / Marketplace / Warmup"
               />
             </div>
             <div>

@@ -22,6 +22,7 @@ from backend.models import (
 def test_profile_create_minimal():
     p = ProfileCreate(name="Test")
     assert p.name == "Test"
+    assert p.group is None
     assert p.fingerprint_seed is None
     assert p.platform == "windows"
     assert p.screen_width == 1920
@@ -35,6 +36,7 @@ def test_profile_create_minimal():
 def test_profile_create_all_fields():
     p = ProfileCreate(
         name="Full",
+        group="Team A",
         fingerprint_seed=42,
         proxy="http://host:8080",
         timezone="America/New_York",
@@ -54,6 +56,7 @@ def test_profile_create_all_fields():
         notes="test note",
         tags=[TagCreate(tag="work", color="#ff0000")],
     )
+    assert p.group == "Team A"
     assert p.platform == "macos"
     assert p.human_preset == "careful"
     assert p.color_scheme == "dark"
@@ -104,6 +107,12 @@ def test_profile_update_exclude_unset():
     p = ProfileUpdate(name="New Name")
     dumped = p.model_dump(exclude_unset=True)
     assert dumped == {"name": "New Name"}
+
+
+def test_profile_update_group_exclude_unset():
+    p = ProfileUpdate(group="Ops")
+    dumped = p.model_dump(exclude_unset=True)
+    assert dumped == {"group": "Ops"}
 
 
 def test_profile_update_invalid_platform():
@@ -180,11 +189,12 @@ def test_profile_status_response_cdp_url_stopped():
 
 def test_profile_response_cdp_url():
     r = ProfileResponse(
-        id="abc", name="Test", fingerprint_seed=12345,
+        id="abc", name="Test", group="Ops", fingerprint_seed=12345,
         user_data_dir="/data/profiles/abc",
         created_at="2026-01-01T00:00:00", updated_at="2026-01-01T00:00:00",
         status="running", cdp_url="/api/profiles/abc/cdp",
     )
+    assert r.group == "Ops"
     assert r.cdp_url == "/api/profiles/abc/cdp"
 
 

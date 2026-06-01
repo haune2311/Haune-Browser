@@ -34,6 +34,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS profiles (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
+                group_name TEXT,
                 fingerprint_seed INTEGER NOT NULL,
                 proxy TEXT,
                 timezone TEXT,
@@ -78,6 +79,9 @@ def init_db():
         if "auto_launch" not in cols:
             conn.execute("ALTER TABLE profiles ADD COLUMN auto_launch BOOLEAN DEFAULT 0")
             conn.commit()
+        if "group_name" not in cols:
+            conn.execute("ALTER TABLE profiles ADD COLUMN group_name TEXT")
+            conn.commit()
 
 
 def _now() -> str:
@@ -98,14 +102,14 @@ def create_profile(
     with get_db() as conn:
         conn.execute(
             """INSERT INTO profiles (
-                id, name, fingerprint_seed, proxy, timezone, locale, platform,
+                id, name, group_name, fingerprint_seed, proxy, timezone, locale, platform,
                 user_agent, screen_width, screen_height, gpu_vendor, gpu_renderer,
                 hardware_concurrency, humanize, human_preset, headless, geoip,
                 clipboard_sync, auto_launch, color_scheme, launch_args, notes,
                 user_data_dir, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
-                profile_id, name, seed,
+                profile_id, name, fields.get("group"), seed,
                 fields.get("proxy"),
                 fields.get("timezone"),
                 fields.get("locale"),
@@ -144,6 +148,7 @@ def get_profile(profile_id: str) -> dict[str, Any] | None:
         if not row:
             return None
         profile = dict(row)
+        profile["group"] = profile.pop("group_name", None)
         profile["launch_args"] = json.loads(profile.get("launch_args") or "[]")
         tags = conn.execute(
             "SELECT tag, color FROM profile_tags WHERE profile_id = ?",
@@ -159,6 +164,7 @@ def list_profiles() -> list[dict[str, Any]]:
         profiles = []
         for row in rows:
             profile = dict(row)
+            profile["group"] = profile.pop("group_name", None)
             profile["launch_args"] = json.loads(profile.get("launch_args") or "[]")
             tags = conn.execute(
                 "SELECT tag, color FROM profile_tags WHERE profile_id = ?",
@@ -184,7 +190,7 @@ def update_profile(profile_id: str, **fields: Any) -> dict[str, Any] | None:
         fields["launch_args"] = json.dumps(fields["launch_args"] or [])
 
     for col in (
-        "name", "fingerprint_seed", "proxy", "timezone", "locale", "platform",
+        "name", "group_name", "fingerprint_seed", "proxy", "timezone", "locale", "platform",
         "user_agent", "screen_width", "screen_height", "gpu_vendor", "gpu_renderer",
         "hardware_concurrency", "humanize", "human_preset", "headless", "geoip",
         "clipboard_sync", "auto_launch", "color_scheme", "launch_args", "notes",

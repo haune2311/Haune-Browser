@@ -1,4 +1,4 @@
-"""CloakBrowser Manager — FastAPI application.
+"""Haune Browser — FastAPI application.
 
 Serves the React dashboard (static files) and provides a REST API
 for browser profile management with live VNC viewing.
@@ -377,7 +377,7 @@ async def lifespan(app: FastAPI):
     db.init_db()
     await browser_mgr.cleanup_stale()
     browser_mgr._auto_launch_task = asyncio.create_task(browser_mgr.auto_launch_all())
-    logger.info("CloakBrowser Manager started")
+    logger.info("Haune Browser started")
     yield
     logger.info("Shutting down — stopping all browsers...")
     if browser_mgr._auto_launch_task and not browser_mgr._auto_launch_task.done():
@@ -386,8 +386,27 @@ async def lifespan(app: FastAPI):
     await browser_mgr.cleanup_all()
 
 
-app = FastAPI(title="CloakBrowser Manager", lifespan=lifespan)
+app = FastAPI(title="Haune Browser", lifespan=lifespan)
 app.add_middleware(AuthMiddleware)
+
+
+def _profile_response(profile: dict) -> ProfileResponse:
+    status = browser_mgr.get_status(profile["id"])
+    profile["status"] = status["status"]
+    profile["vnc_ws_port"] = status["vnc_ws_port"]
+    profile["cdp_url"] = status["cdp_url"]
+    profile["tags"] = [TagResponse(**t) for t in profile.get("tags", [])]
+    return ProfileResponse(**profile)
+
+
+def _create_profile_record(req: ProfileCreate):
+    data = req.model_dump()
+    tags = data.pop("tags", None)
+    if tags:
+        data["tags"] = [t.model_dump() if hasattr(t, "model_dump") else t for t in tags]
+    else:
+        data["tags"] = []
+    return db.create_profile(**data)
 
 
 # ── Authentication ────────────────────────────────────────────────────────────
@@ -440,30 +459,19 @@ async def list_profiles():
     profiles = db.list_profiles()
     result = []
     for p in profiles:
-        status = browser_mgr.get_status(p["id"])
-        p["status"] = status["status"]
-        p["vnc_ws_port"] = status["vnc_ws_port"]
-        p["cdp_url"] = status["cdp_url"]
-        p["tags"] = [TagResponse(**t) for t in p.get("tags", [])]
-        result.append(ProfileResponse(**p))
+        result.append(_profile_response(p))
     return result
 
 
 @app.post("/api/profiles", response_model=ProfileResponse, status_code=201)
 async def create_profile(req: ProfileCreate):
-    data = req.model_dump()
-    tags = data.pop("tags", None)
-    if tags:
-        data["tags"] = [t.model_dump() if hasattr(t, "model_dump") else t for t in tags]
-    else:
-        data["tags"] = []
-    profile = db.create_profile(**data)
-    status = browser_mgr.get_status(profile["id"])
-    profile["status"] = status["status"]
-    profile["vnc_ws_port"] = status["vnc_ws_port"]
-    profile["cdp_url"] = status["cdp_url"]
-    profile["tags"] = [TagResponse(**t) for t in profile.get("tags", [])]
-    return ProfileResponse(**profile)
+    return _profile_response(_create_profile_record(req))
+
+
+@app.post("/api/automation/profiles", response_model=ProfileResponse, status_code=201)
+async def automation_create_profile(req: ProfileCreate):
+    """Create a profile through the automation API for external clients."""
+    return _profile_response(_create_profile_record(req))
 
 
 @app.get("/api/profiles/{profile_id}", response_model=ProfileResponse)
@@ -471,30 +479,22 @@ async def get_profile(profile_id: str):
     profile = db.get_profile(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    status = browser_mgr.get_status(profile_id)
-    profile["status"] = status["status"]
-    profile["vnc_ws_port"] = status["vnc_ws_port"]
-    profile["cdp_url"] = status["cdp_url"]
-    profile["tags"] = [TagResponse(**t) for t in profile.get("tags", [])]
-    return ProfileResponse(**profile)
+    return _profile_response(profile)
 
 
 @app.put("/api/profiles/{profile_id}", response_model=ProfileResponse)
 async def update_profile(profile_id: str, req: ProfileUpdate):
     # Only pass fields that were explicitly set
     data = req.model_dump(exclude_unset=True)
+    if "group" in data:
+        data["group_name"] = data.pop("group")
     tags = data.pop("tags", None)
     if tags is not None:
         data["tags"] = [t.model_dump() if hasattr(t, "model_dump") else t for t in tags]
     profile = db.update_profile(profile_id, **data)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    status = browser_mgr.get_status(profile_id)
-    profile["status"] = status["status"]
-    profile["vnc_ws_port"] = status["vnc_ws_port"]
-    profile["cdp_url"] = status["cdp_url"]
-    profile["tags"] = [TagResponse(**t) for t in profile.get("tags", [])]
-    return ProfileResponse(**profile)
+    return _profile_response(profile)
 
 
 @app.delete("/api/profiles/{profile_id}")

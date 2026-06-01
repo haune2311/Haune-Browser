@@ -39,6 +39,7 @@ def test_init_db_idempotent(tmp_db: Path):
 def test_create_profile_minimal(tmp_db: Path):
     p = db.create_profile("Test")
     assert p["name"] == "Test"
+    assert p["group"] is None
     assert isinstance(p["id"], str) and len(p["id"]) == 36  # UUID
     assert 10000 <= p["fingerprint_seed"] <= 99999  # random default
     assert p["user_data_dir"].startswith(str(tmp_db))
@@ -55,6 +56,7 @@ def test_create_profile_with_seed(tmp_db: Path):
 def test_create_profile_all_fields(tmp_db: Path):
     p = db.create_profile(
         "Full",
+        group="Team A",
         fingerprint_seed=99999,
         proxy="http://host:8080",
         timezone="America/New_York",
@@ -73,6 +75,7 @@ def test_create_profile_all_fields(tmp_db: Path):
         color_scheme="dark",
         notes="test note",
     )
+    assert p["group"] == "Team A"
     assert p["proxy"] == "http://host:8080"
     assert p["platform"] == "macos"
     assert p["gpu_vendor"] == "NVIDIA"
@@ -183,6 +186,12 @@ def test_list_profiles_includes_tags(tmp_db: Path):
     assert len(profiles[0]["tags"]) == 1
 
 
+def test_list_profiles_includes_group(tmp_db: Path):
+    db.create_profile("Grouped", group="Ops")
+    profiles = db.list_profiles()
+    assert profiles[0]["group"] == "Ops"
+
+
 # ── update_profile ───────────────────────────────────────────────────────────
 
 
@@ -190,6 +199,11 @@ def test_update_profile_partial(sample_profile: dict):
     updated = db.update_profile(sample_profile["id"], name="Renamed")
     assert updated["name"] == "Renamed"
     assert updated["fingerprint_seed"] == 12345  # unchanged
+
+
+def test_update_profile_group(sample_profile: dict):
+    updated = db.update_profile(sample_profile["id"], group_name="Ops")
+    assert updated["group"] == "Ops"
 
 
 def test_update_profile_tags_replace(tmp_db: Path):

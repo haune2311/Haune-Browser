@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class ProfileCreate(BaseModel):
     name: str
+    group: str | None = None
     fingerprint_seed: int | None = None  # random if not set
     proxy: str | None = None  # "http://user:pass@host:port" or null
     timezone: str | None = None  # "America/New_York"
@@ -34,6 +35,7 @@ class ProfileCreate(BaseModel):
 
 class ProfileUpdate(BaseModel):
     name: str | None = None
+    group: str | None = Field(default=None)
     fingerprint_seed: int | None = None
     proxy: str | None = Field(default=None)
     timezone: str | None = Field(default=None)
@@ -70,6 +72,7 @@ class TagResponse(BaseModel):
 class ProfileResponse(BaseModel):
     id: str
     name: str
+    group: str | None = None
     fingerprint_seed: int
     proxy: str | None = None
     timezone: str | None = None

@@ -1,0 +1,35 @@
+interface BrandMarkProps {
+  className?: string;
+}
+
+export function BrandMark({ className = "h-6 w-6" }: BrandMarkProps) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true" fill="none">
+      <path
+        d="M7 20C15 39 26 51 32 56C38 51 49 39 57 20C47 15 39 13 32 13C25 13 17 15 7 20Z"
+        fill="#22c55e"
+      />
+      <path
+        d="M12 23C19 38 27.5 48 32 52C36.5 48 45 38 52 23C43.5 19.5 37 18 32 18C27 18 20.5 19.5 12 23Z"
+        fill="#ff5b6a"
+      />
+      <path
+        d="M17 25C22.5 36 28.5 43.5 32 47C35.5 43.5 41.5 36 47 25C40.5 22.5 35.5 21.5 32 21.5C28.5 21.5 23.5 22.5 17 25Z"
+        fill="#ff8c95"
+        opacity="0.55"
+      />
+      <path
+        d="M10 21.5C18 17.8 25.2 16 32 16C38.8 16 46 17.8 54 21.5"
+        stroke="#f3f4f6"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+      <circle cx="24" cy="29" r="1.8" fill="#1f2937" />
+      <circle cx="31" cy="33" r="1.8" fill="#1f2937" />
+      <circle cx="38.5" cy="28.5" r="1.8" fill="#1f2937" />
+      <circle cx="28" cy="40" r="1.8" fill="#1f2937" />
+      <circle cx="36.5" cy="38.5" r="1.8" fill="#1f2937" />
+    </svg>
+  );
+}

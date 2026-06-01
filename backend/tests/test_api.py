@@ -26,6 +26,7 @@ def test_create_profile(app_client: TestClient):
     assert resp.status_code == 201
     data = resp.json()
     assert data["name"] == "Test"
+    assert data["group"] is None
     assert data["status"] == "stopped"
     assert "id" in data
     assert len(data["id"]) == 36  # UUID
@@ -34,6 +35,7 @@ def test_create_profile(app_client: TestClient):
 def test_create_profile_with_all_fields(app_client: TestClient):
     resp = app_client.post("/api/profiles", json={
         "name": "Full",
+        "group": "Team A",
         "fingerprint_seed": 42,
         "proxy": "http://host:8080",
         "platform": "macos",
@@ -45,9 +47,31 @@ def test_create_profile_with_all_fields(app_client: TestClient):
     })
     assert resp.status_code == 201
     data = resp.json()
+    assert data["group"] == "Team A"
     assert data["fingerprint_seed"] == 42
     assert data["platform"] == "macos"
     assert len(data["tags"]) == 1
+
+
+def test_automation_create_profile(app_client: TestClient):
+    resp = app_client.post("/api/automation/profiles", json={
+        "name": "API Created",
+        "group": "Imports",
+        "platform": "linux",
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["name"] == "API Created"
+    assert data["group"] == "Imports"
+    assert data["platform"] == "linux"
+
+
+def test_automation_create_profile_persists(app_client: TestClient):
+    created = app_client.post("/api/automation/profiles", json={"name": "Persisted"})
+    pid = created.json()["id"]
+    fetched = app_client.get(f"/api/profiles/{pid}")
+    assert fetched.status_code == 200
+    assert fetched.json()["name"] == "Persisted"
 
 
 def test_create_profile_invalid_platform(app_client: TestClient):
@@ -71,9 +95,10 @@ def test_get_profile_not_found(app_client: TestClient):
 def test_update_profile(app_client: TestClient):
     create = app_client.post("/api/profiles", json={"name": "Original"})
     pid = create.json()["id"]
-    resp = app_client.put(f"/api/profiles/{pid}", json={"name": "Renamed"})
+    resp = app_client.put(f"/api/profiles/{pid}", json={"name": "Renamed", "group": "Ops"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Renamed"
+    assert resp.json()["group"] == "Ops"
 
 
 def test_update_profile_not_found(app_client: TestClient):
